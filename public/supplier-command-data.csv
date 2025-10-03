@@ -1,0 +1,51 @@
+PO Number,PO line,PO Schedule Line,Item Code,PO Delivery Date,PO Open Qty,Buyer,Buyer email,supplier_email,Supplier,Supplier contact name,Status
+8394266,1,1,2914-1122,09/30/2025,3,Carlos,carlos@happyrobot.ai,aerocraft1@example.com,AeroCraft Tooling Co,Miles Ortega,Delivered
+6595370,2,12,8746-7182,11/24/2025,11,Carlos,carlos@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Clara Nguyen,Pending
+8899386,2,8,9506-8174,11/20/2025,19,Carlos,carlos@happyrobot.ai,steelforgeltd@example.com,SteelForge Ltd,Sofia Martins,Delayed
+7631078,2,1,5688-1622,10/19/2025,15,Carlos,carlos@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Miles Ortega,Delayed
+2020468,1,3,4555-1653,10/03/2025,28,Carlos,carlos@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Hannah Kim,Delayed
+6864070,4,4,9036-3708,10/12/2025,25,Carlos,carlos@happyrobot.ai,steelforgeltd@example.com,SteelForge Ltd,Jordan Parker,On Way
+1934321,3,7,6295-6569,10/01/2025,20,Carlos,carlos@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Miles Ortega,Delivered
+4901675,3,11,9910-4379,11/25/2025,28,Carlos,carlos@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Denise Patel,At Risk
+1664203,4,5,1658-3905,10/06/2025,18,Denise,denise@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Jamie Li,Phone Call
+1688919,4,6,9124-6598,10/08/2025,38,Denise,denise@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Hannah Kim,On Way
+8315869,1,9,2689-8949,10/16/2025,25,Denise,denise@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Denise Patel,Email Sent
+4264881,4,9,4871-6918,10/26/2025,14,Denise,denise@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Clara Nguyen,Confirmed
+5698419,3,7,6225-3480,10/24/2025,35,Denise,denise@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Roberto Alvarez,Delivered
+7712008,3,9,2863-7149,10/04/2025,18,Denise,denise@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Jamie Li,Delayed
+7626844,3,7,8857-4040,10/18/2025,26,Denise,denise@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Miles Ortega,Pending
+2739978,1,6,8795-2068,10/28/2025,9,Denise,denise@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Clara Nguyen,Delayed
+7848475,3,4,5673-1143,11/06/2025,21,Denise,denise@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Ethan Brooks,Delivered
+5586945,2,6,7707-9685,10/25/2025,32,Denise,denise@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Roberto Alvarez,Confirmed
+9189049,1,9,3160-5192,11/21/2025,16,Denise,denise@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Clara Nguyen,Phone Call
+5925600,3,7,9979-4085,11/12/2025,39,Denise,denise@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Ethan Brooks,Email Sent
+9805865,1,9,8589-2406,10/29/2025,5,Denise,denise@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Jamie Li,Delayed
+7619628,1,5,5648-6187,11/05/2025,40,Denise,denise@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Denise Patel,At Risk
+8816480,1,10,2457-9438,10/30/2025,38,Federico,federico@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Miles Ortega,Confirmed
+4410134,3,1,6775-9754,10/31/2025,10,Federico,federico@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Roberto Alvarez,At Risk
+4422569,3,9,6476-6260,11/20/2025,30,Federico,federico@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Federico Ramos,On Way
+4684261,3,9,2357-1297,10/18/2025,44,Federico,federico@happyrobot.ai,steelforgeltd@example.com,SteelForge Ltd,Taylor Reed,On Way
+5081657,2,9,9273-7441,11/07/2025,21,Federico,federico@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Roberto Alvarez,Email Sent
+7231251,4,3,2223-1291,11/18/2025,14,Federico,federico@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Jamie Li,Pending
+3222988,3,11,1811-8668,11/17/2025,24,Federico,federico@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Hannah Kim,Confirmed
+1594020,2,9,7052-9801,11/05/2025,12,Federico,federico@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Federico Ramos,On Way
+8470514,3,10,2680-9668,11/16/2025,26,Federico,federico@happyrobot.ai,steelforgeltd@example.com,SteelForge Ltd,Taylor Reed,Delayed
+8599211,4,7,9222-6511,10/14/2025,34,Federico,federico@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Hannah Kim,Phone Call
+4973008,1,1,1259-6670,10/01/2025,42,John,john@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Federico Ramos,Confirmed
+9070451,3,5,5082-4277,10/01/2025,30,John,john@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Federico Ramos,Delayed
+2814585,2,10,5412-3537,11/20/2025,47,John,john@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Hannah Kim,On Way
+8731514,1,10,5217-2196,10/31/2025,45,John,john@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Jamie Li,Email Sent
+7199608,3,4,3768-9501,11/08/2025,37,John,john@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Denise Patel,Delayed
+6010003,3,10,5813-4187,11/24/2025,33,John,john@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Ethan Brooks,Delivered
+2152387,3,11,7691-1731,10/07/2025,39,John,john@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Federico Ramos,Delayed
+8153753,3,3,8965-4965,09/30/2025,45,John,john@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Miles Ortega,At Risk
+3958065,4,3,1052-9905,10/19/2025,45,John,john@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Priya Sharma,On Way
+9280385,3,4,5689-3585,10/16/2025,11,John,john@happyrobot.ai,steelforgeltd@example.com,SteelForge Ltd,Sofia Martins,At Risk
+2531545,2,12,2874-1239,11/07/2025,33,Nikhil,nikhil@happyrobot.ai,steelforgeltd@example.com,SteelForge Ltd,Jordan Parker,Delayed
+2263688,2,3,1444-6672,10/02/2025,50,Nikhil,nikhil@happyrobot.ai,steelforgeltd@example.com,SteelForge Ltd,Sofia Martins,Confirmed
+3196688,1,10,3704-3374,10/30/2025,35,Nikhil,nikhil@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Jamie Li,Delayed
+5314271,3,3,1464-7464,10/16/2025,3,Nikhil,nikhil@happyrobot.ai,aerocrafttoolingco@example.com,AeroCraft Tooling Co,Clara Nguyen,Email Sent
+6251413,3,7,9442-2130,11/10/2025,49,Nikhil,nikhil@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Roberto Alvarez,Pending
+9019196,4,11,3292-9721,11/05/2025,40,Nikhil,nikhil@happyrobot.ai,skyworksparts@example.com,SkyWorks Parts,Hannah Kim,Delivered
+4325082,3,9,7222-9073,11/07/2025,4,Nikhil,nikhil@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Priya Sharma,Email Sent
+7337683,3,12,4270-5334,10/11/2025,2,Nikhil,nikhil@happyrobot.ai,mechasuppliesinc@example.com,MechaSupplies Inc,Priya Sharma,Phone Call
