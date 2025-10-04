@@ -179,6 +179,27 @@ npm run build
 npm run preview
 ```
 
+## Deployment
+
+### Production URL
+**https://supply-command-project.vercel.app**
+
+### Deploying Updates
+
+This project is deployed on Vercel. To deploy updates:
+
+```bash
+# Install Vercel CLI (one-time setup)
+npm i -g vercel
+
+# Deploy to production
+vercel --prod
+
+# Or connect to GitHub for automatic deployments
+# 1. Push changes to main branch
+# 2. Vercel auto-deploys on every push
+```
+
 ## Future Enhancements
 
 - [ ] Backend API integration
