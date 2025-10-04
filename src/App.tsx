@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, AlertCircle, Phone, Mail, Clock, Truck, Package, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Phone, Mail, Clock, Truck, Package, X, Search, Filter } from 'lucide-react';
 
 interface POData {
   'PO Number': string;
@@ -38,10 +38,7 @@ interface SupplierMetrics {
 
 const HappyRobotLogo = () => (
   <div className="flex items-center gap-2">
-    <div className="flex gap-0.5">
-      <div className="w-3 h-3 bg-black rounded-sm"></div>
-      <div className="w-3 h-3 bg-black rounded-sm"></div>
-    </div>
+    <img src="/happy-robot-logo.png" alt="Happy Robot" className="w-6 h-6" />
     <span className="font-semibold text-xl">HappyRobot</span>
   </div>
 );
@@ -58,6 +55,12 @@ const SupplierCommand: React.FC = () => {
   const [selectedBuyer, setSelectedBuyer] = useState('Carlos');
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
+  
+  // Feature #2: Smart Filters & Search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'next7' | 'overdue'>('all');
+  const [riskFilter, setRiskFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [supplierFilterPO, setSupplierFilterPO] = useState<string>('all');
 
   const unreliableSuppliers = ['AeroCraft Tooling Co', 'MechaSupplies Inc'];
 
@@ -146,31 +149,67 @@ const SupplierCommand: React.FC = () => {
       };
     }
     
-    // Avg Response Time
+    // Calculate metrics for display
     const avgResponseTime = Math.round(
       supplierData.reduce((sum, row) => sum + parseInt(row['Response Time (hrs)']), 0) / supplierData.length
     );
     
-    // Escalation Rate (phone calls)
     const escalationRate = Math.round(
       (supplierData.filter(row => row['Phone Escalation'] === 'True').length / supplierData.length) * 100
     );
     
-    // On-time deliveries (not Delayed or Incomplete)
     const onTimeDeliveries = Math.round(
       (supplierData.filter(row => !['Delayed', 'Incomplete'].includes(row['Delivery Status'])).length / supplierData.length) * 100
     );
     
-    // Delay Rate
     const delayRate = Math.round(
       (supplierData.filter(row => ['Delayed', 'Incomplete'].includes(row['Delivery Status'])).length / supplierData.length) * 100
     );
     
-    // Risk Score (0-100)
-    const responseRisk = Math.min((avgResponseTime / 48) * 35, 35); // 48hrs baseline
-    const escalationRisk = (escalationRate / 100) * 35;
-    const delayRisk = (delayRate / 100) * 30;
-    const riskScore = Math.round(responseRisk + escalationRisk + delayRisk);
+    // New Risk Score Calculation with more aggressive values
+    let totalRisk = 0;
+    
+    supplierData.forEach(row => {
+      let orderRisk = 0;
+      
+      // Base risk by delivery status (increased base values)
+      const status = row['Delivery Status'];
+      if (status === 'Delivered') {
+        orderRisk = 10; // Reduced from 15 to give more range
+      } else if (status === 'Delayed') {
+        orderRisk = 70; // Increased from 65
+      } else if (status === 'Incomplete') {
+        orderRisk = 90; // Increased from 80
+      }
+      
+      // Escalation penalty: +15 if phone escalation occurred
+      if (row['Phone Escalation'] === 'True') {
+        orderRisk += 15;
+      }
+      
+      // Response time penalty: normalize between 12h (good) and 72h (bad)
+      const responseHours = parseInt(row['Response Time (hrs)']);
+      let responseTimePenalty = 0;
+      
+      if (responseHours <= 12) {
+        responseTimePenalty = 0;
+      } else if (responseHours >= 72) {
+        responseTimePenalty = 20;
+      } else {
+        // Linear interpolation between 12h and 72h
+        responseTimePenalty = ((responseHours - 12) / (72 - 12)) * 20;
+      }
+      
+      orderRisk += responseTimePenalty;
+      
+      // Clamp to 0-100
+      orderRisk = Math.max(0, Math.min(100, orderRisk));
+      
+      totalRisk += orderRisk;
+    });
+    
+    // Average risk across all orders
+    const riskScore = Math.round(totalRisk / supplierData.length);
     
     return {
       avgResponseTime,
@@ -181,11 +220,75 @@ const SupplierCommand: React.FC = () => {
       totalOrders: supplierData.length
     };
   };
-
+  
+  const calculateContactMetrics = (supplier: string, contact: string) => {
+    const contactData = supplierInsights.filter(
+      row => row.Supplier === supplier && row['Supplier contact'] === contact
+    );
+    
+    if (contactData.length === 0) return null;
+    
+    const avgResponseTime = Math.round(
+      contactData.reduce((sum, row) => sum + parseInt(row['Response Time (hrs)']), 0) / contactData.length
+    );
+    
+    const escalationRate = Math.round(
+      (contactData.filter(row => row['Phone Escalation'] === 'True').length / contactData.length) * 100
+    );
+    
+    const onTimeRate = Math.round(
+      (contactData.filter(row => !['Delayed', 'Incomplete'].includes(row['Delivery Status'])).length / contactData.length) * 100
+    );
+    
+    // Calculate risk score for this contact using same logic
+    let totalRisk = 0;
+    
+    contactData.forEach(row => {
+      let orderRisk = 0;
+      
+      const status = row['Delivery Status'];
+      if (status === 'Delivered') {
+        orderRisk = 15;
+      } else if (status === 'Delayed') {
+        orderRisk = 65;
+      } else if (status === 'Incomplete') {
+        orderRisk = 80;
+      }
+      
+      if (row['Phone Escalation'] === 'True') {
+        orderRisk += 15;
+      }
+      
+      const responseHours = parseInt(row['Response Time (hrs)']);
+      let responseTimePenalty = 0;
+      
+      if (responseHours <= 12) {
+        responseTimePenalty = 0;
+      } else if (responseHours >= 72) {
+        responseTimePenalty = 20;
+      } else {
+        responseTimePenalty = ((responseHours - 12) / (72 - 12)) * 20;
+      }
+      
+      orderRisk += responseTimePenalty;
+      orderRisk = Math.max(0, Math.min(100, orderRisk));
+      totalRisk += orderRisk;
+    });
+    
+    const riskScore = Math.round(totalRisk / contactData.length);
+    
+    return {
+      avgResponseTime,
+      escalationRate,
+      onTimeRate,
+      totalOrders: contactData.length,
+      riskScore
+    };
+  };
   
   const getRiskLevel = (score: number): { label: string; color: string } => {
-    if (score >= 70) return { label: 'High Risk', color: 'text-red-600 bg-red-100' };
-    if (score >= 40) return { label: 'Medium Risk', color: 'text-yellow-600 bg-yellow-100' };
+    if (score >= 50) return { label: 'High Risk', color: 'text-red-600 bg-red-100' };
+    if (score >= 35) return { label: 'Medium Risk', color: 'text-yellow-600 bg-yellow-100' };
     return { label: 'Low Risk', color: 'text-green-600 bg-green-100' };
   };
 
@@ -208,8 +311,6 @@ const SupplierCommand: React.FC = () => {
   };
 
   const getStatusBadge = (status: string, supplier: string = '', isConfirmedTab: boolean = false) => {
-    const isUnreliable = unreliableSuppliers.includes(supplier);
-    
     const badges: Record<string, { bg: string; text: string; label: string; icon: any }> = {
       'Confirmed': { bg: 'bg-green-100', text: 'text-green-800', label: 'Confirmed', icon: CheckCircle },
       'Delivered': { bg: 'bg-green-100', text: 'text-green-800', label: 'Delivered', icon: Package },
@@ -224,20 +325,10 @@ const SupplierCommand: React.FC = () => {
     const badge = badges[status] || badges['Pending'];
     const IconComponent = badge.icon;
     
-    const canShowAtRisk = ['Confirmed', 'Email Sent', 'Phone Call', 'Pending'].includes(status);
-    
     return (
-      <div className="flex flex-wrap gap-2">
-        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${badge.bg}`}>
-          <IconComponent className={`w-4 h-4 ${badge.text}`} />
-          <span className={`text-sm font-medium ${badge.text}`}>{badge.label}</span>
-        </div>
-        {isConfirmedTab && isUnreliable && canShowAtRisk && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-100">
-            <AlertCircle className="w-4 h-4 text-yellow-800" />
-            <span className="text-sm font-medium text-yellow-800">At Risk</span>
-          </div>
-        )}
+      <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${badge.bg}`}>
+        <IconComponent className={`w-4 h-4 ${badge.text}`} />
+        <span className={`text-sm font-medium ${badge.text}`}>{badge.label}</span>
       </div>
     );
   };
@@ -257,15 +348,52 @@ const SupplierCommand: React.FC = () => {
     return diffDays;
   };
 
+  // Feature #3: Priority Indicators - only for 1-3 days out
+  const getPriorityLevel = (po: POData): { level: 'overdue' | 'urgent' | 'soon' | 'normal'; color: string; label: string } | null => {
+    const daysUntil = getDaysUntil(po['PO Delivery Date']);
+    
+    // Don't show priority for delivered items or items > 3 days out
+    if (po.Status === 'Delivered' || daysUntil > 3 || daysUntil < 0) {
+      return null;
+    }
+    
+    if (daysUntil <= 1) {
+      return { level: 'urgent', color: 'bg-red-500', label: `Due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}` };
+    } else if (daysUntil <= 3) {
+      return { level: 'soon', color: 'bg-orange-500', label: `Due in ${daysUntil} days` };
+    }
+    
+    return null;
+  };
+
+  const getRiskLevelForPO = (po: POData): 'high' | 'medium' | 'low' => {
+    const daysUntil = getDaysUntil(po['PO Delivery Date']);
+    const isUnreliable = unreliableSuppliers.includes(po.Supplier);
+    
+    if (daysUntil < 0 || (daysUntil <= 1 && !['Confirmed', 'Delivered'].includes(po.Status))) {
+      return 'high';
+    } else if (daysUntil <= 3 || (isUnreliable && ['Confirmed', 'Delivered'].includes(po.Status))) {
+      return 'medium';
+    }
+    return 'low';
+  };
+
   const isThisWeek = (dateStr: string): boolean => {
     if (!dateStr) return false;
     
     // Define the current week boundaries
     const weekStart = new Date('2025-09-29'); // Monday Sept 29
-    const weekEnd = new Date('2025-10-05');   // Sunday Oct 5
+    const weekEnd = new Date('2025-10-06');   // Sunday Oct 5
     weekEnd.setHours(23, 59, 59, 999); // Include the entire day
     
+    // Parse the date - handle both MM/D/YYYY and MM/DD/YYYY formats
     const deliveryDate = new Date(dateStr);
+    
+    // Verify it's a valid date
+    if (isNaN(deliveryDate.getTime())) {
+      console.log('Invalid date:', dateStr);
+      return false;
+    }
     
     return deliveryDate >= weekStart && deliveryDate <= weekEnd;
   };
@@ -274,22 +402,51 @@ const SupplierCommand: React.FC = () => {
 
   const thisWeekPOs = buyerData
     .filter(po => isThisWeek(po['PO Delivery Date']))
-    .sort((a, b) => getDaysUntil(a['PO Delivery Date']) - getDaysUntil(b['PO Delivery Date']))
-    .slice(0, 3);
+    .sort((a, b) => getDaysUntil(a['PO Delivery Date']) - getDaysUntil(b['PO Delivery Date']));
 
   const thisWeekPONumbers = new Set(thisWeekPOs.map(po => po['PO Number']));
   
+  // Feature #2: Apply all filters
   const filteredPOs = buyerData.filter(po => {
     if (thisWeekPONumbers.has(po['PO Number'])) {
       return false;
     }
     
+    // Status filter (pending/confirmed)
     if (activeFilter === 'pending') {
-      return !['Confirmed', 'Delivered'].includes(po.Status);
+      // "On Way" should never be in Pending Confirmation
+      if (['Confirmed', 'Delivered', 'On Way'].includes(po.Status)) return false;
     } else {
-      return ['Confirmed', 'Delivered', 'On Way'].includes(po.Status);
+      if (!['Confirmed', 'Delivered', 'On Way'].includes(po.Status)) return false;
     }
+    
+    // Search filter only
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesPO = po['PO Number'].toLowerCase().includes(query);
+      const matchesItem = po['Item Code'].toLowerCase().includes(query);
+      const matchesSupplier = po.Supplier.toLowerCase().includes(query);
+      if (!matchesPO && !matchesItem && !matchesSupplier) return false;
+    }
+    
+    return true;
   });
+
+  // Feature #5: Dashboard Metrics
+  const dashboardMetrics = {
+    actionRequiredToday: buyerData.filter(po => {
+      const daysUntil = getDaysUntil(po['PO Delivery Date']);
+      return daysUntil <= 1 && !['Confirmed', 'Delivered'].includes(po.Status);
+    }).length,
+    avgDaysToDelivery: Math.round(
+      buyerData
+        .filter(po => po.Status !== 'Delivered')
+        .reduce((sum, po) => sum + Math.max(0, getDaysUntil(po['PO Delivery Date'])), 0) / 
+        buyerData.filter(po => po.Status !== 'Delivered').length || 0
+    ),
+    overdueItems: buyerData.filter(po => getDaysUntil(po['PO Delivery Date']) < 0).length,
+    activePOs: buyerData.filter(po => po.Status !== 'Delivered').length
+  };
 
   const handleEmailSupplier = (po: POData) => {
     const subject = encodeURIComponent(`PO #${po['PO Number']} - Status Update Request`);
@@ -337,18 +494,21 @@ const SupplierCommand: React.FC = () => {
                   onClick={() => setActiveView('SUPPLIER INFORMATION')}
                   className={`${activeView === 'SUPPLIER INFORMATION' ? 'text-black' : 'text-gray-500'} hover:text-black transition-colors`}
                 >
-                  SUPPLIER INFORMATION
+                  SUPPLIER INSIGHTS
                 </button>
               </div>
-              <select
-                value={selectedBuyer}
-                onChange={(e) => setSelectedBuyer(e.target.value)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                {[...new Set(poData.map(po => po.Buyer))].sort().map(buyer => (
-                  <option key={buyer} value={buyer}>{buyer}</option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">ACCOUNT</span>
+                <select
+                  value={selectedBuyer}
+                  onChange={(e) => setSelectedBuyer(e.target.value)}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-all"
+                >
+                  {[...new Set(poData.map(po => po.Buyer))].sort().map(buyer => (
+                    <option key={buyer} value={buyer}>{buyer}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -357,34 +517,73 @@ const SupplierCommand: React.FC = () => {
       <main className="max-w-7xl mx-auto px-8 py-12">
         {activeView === 'PO MANAGEMENT' && (
           <>
-            <div className="mb-8">
-              <h2 className="text-5xl font-serif mb-2">Hello, {selectedBuyer}.</h2>
-              <p className="text-lg text-gray-700">This week's POs:</p>
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <h2 className="text-5xl font-serif mb-2">Hello, {selectedBuyer}.</h2>
+                <p className="text-lg text-gray-700">This week's POs:</p>
+              </div>
+
+              {/* Feature #5: Dashboard Metrics - inline with greeting */}
+              <div className="flex gap-3">
+                <div className="bg-white rounded-lg p-4 border-2 border-gray-200 w-32">
+                  <div className="text-xs text-gray-600 mb-1">Expected Today</div>
+                  <div className="text-2xl font-bold text-blue-600">{dashboardMetrics.actionRequiredToday}</div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border-2 border-gray-200 w-32">
+                  <div className="text-xs text-gray-600 mb-1">Delayed</div>
+                  <div className="text-2xl font-bold text-red-600">{buyerData.filter(po => po.Status === 'Delayed').length}</div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border-2 border-gray-200 w-32">
+                  <div className="text-xs text-gray-600 mb-1">Active</div>
+                  <div className="text-2xl font-bold text-gray-900">{dashboardMetrics.activePOs}</div>
+                </div>
+              </div>
             </div>
 
             {thisWeekPOs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 {thisWeekPOs.map((po, idx) => {
-                  const isAtRisk = !['Confirmed', 'Delivered'].includes(po.Status);
+                  const priority = getPriorityLevel(po);
+                  const isDelivered = po.Status === 'Delivered';
+                  
+                  // Check for risk indicators
+                  const supplierRisk = getRiskLevelForPO(po);
+                  const contactMetrics = calculateContactMetrics(po.Supplier, po['Supplier contact name']);
+                  const hasHighEscalationContact = contactMetrics && contactMetrics.escalationRate >= 40;
+                  const isUnreliableSupplier = supplierRisk === 'medium' || supplierRisk === 'high';
+                  const hasRiskWarning = isUnreliableSupplier || hasHighEscalationContact;
+                  
                   return (
                     <div
                       key={`${po['PO Number']}-${idx}`}
                       onClick={() => setSelectedPO(po)}
-                      className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative"
+                      className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative ${
+                        isDelivered ? 'opacity-60' : ''
+                      }`}
                     >
-                      <div className={`absolute top-6 right-6 w-6 h-6 rounded-full ${getStatusColor(po.Status, true)}`}></div>
+                      {isDelivered && (
+                        <div className="absolute inset-0 bg-green-100 opacity-20 rounded-2xl pointer-events-none"></div>
+                      )}
+                      {/* Feature #3: Priority Indicator Badge - only for 1-3 days */}
+                      {priority && (
+                        <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-white text-xs font-semibold ${priority.color}`}>
+                          {priority.label}
+                        </div>
+                      )}
                       <div className="mb-4">
                         <h3 className="text-xl font-semibold mb-1">PO #{po['PO Number']}</h3>
                         <p className="text-sm text-gray-600">Due {formatDate(po['PO Delivery Date'])}</p>
+                        <p className="text-xs text-gray-500 mt-1">{po.Supplier}</p>
                       </div>
-                      {isAtRisk ? (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-100">
-                          <AlertCircle className="w-4 h-4 text-red-800" />
-                          <span className="text-sm font-medium text-red-800">At Risk</span>
-                        </div>
-                      ) : (
-                        getStatusBadge(po.Status, po.Supplier, false)
-                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {getStatusBadge(po.Status, po.Supplier, false)}
+                        {hasRiskWarning && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-100">
+                            <AlertCircle className="w-4 h-4 text-yellow-800" />
+                            <span className="text-sm font-medium text-yellow-800">At Risk</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -395,7 +594,8 @@ const SupplierCommand: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-start mb-8">
+            {/* Feature #2: Search Bar - inline with toggle */}
+            <div className="flex items-center gap-4 mb-8">
               <div className="inline-flex rounded-full bg-white shadow-sm overflow-hidden">
                 <button
                   onClick={() => setActiveFilter('pending')}
@@ -418,35 +618,77 @@ const SupplierCommand: React.FC = () => {
                     Confirmed
                   </button>
                 </div>
+                
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search PO, Item, Supplier..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:border-black transition-colors bg-white"
+                  />
+                </div>
               </div>
   
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredPOs.map((po, idx) => (
-                  <div
-                    key={`${po['PO Number']}-${idx}`}
-                    onClick={() => setSelectedPO(po)}
-                    className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <div className="mb-4">
-                      <h3 className="text-xl font-semibold mb-1">PO #{po['PO Number']}</h3>
-                      <p className="text-sm text-gray-600">Due {formatDate(po['PO Delivery Date'])}</p>
-                      <p className="text-xs text-gray-500 mt-1">{po.Supplier}</p>
+                {filteredPOs.sort((a, b) => getDaysUntil(a['PO Delivery Date']) - getDaysUntil(b['PO Delivery Date'])).map((po, idx) => {
+                  const priority = getPriorityLevel(po);
+                  const isDelivered = po.Status === 'Delivered';
+                  
+                  // Check for risk indicators
+                  const supplierRisk = getRiskLevelForPO(po);
+                  const contactMetrics = calculateContactMetrics(po.Supplier, po['Supplier contact name']);
+                  const hasHighEscalationContact = contactMetrics && contactMetrics.escalationRate >= 40;
+                  const isUnreliableSupplier = supplierRisk === 'medium' || supplierRisk === 'high';
+                  const hasRiskWarning = isUnreliableSupplier || hasHighEscalationContact;
+                  
+                  return (
+                    <div
+                      key={`${po['PO Number']}-${idx}`}
+                      onClick={() => setSelectedPO(po)}
+                      className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative ${
+                        isDelivered ? 'opacity-60' : ''
+                      }`}
+                    >
+                      {isDelivered && (
+                        <div className="absolute inset-0 bg-green-100 opacity-30 rounded-2xl pointer-events-none"></div>
+                      )}
+                      {/* Feature #3: Priority Indicator Badge - only for 1-3 days */}
+                      {priority && (
+                        <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-white text-xs font-semibold ${priority.color}`}>
+                          {priority.label}
+                        </div>
+                      )}
+                      <div className="mb-4">
+                        <h3 className="text-xl font-semibold mb-1">PO #{po['PO Number']}</h3>
+                        <p className="text-sm text-gray-600">Due {formatDate(po['PO Delivery Date'])}</p>
+                        <p className="text-xs text-gray-500 mt-1">{po.Supplier}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {getStatusBadge(po.Status, po.Supplier, activeFilter === 'confirmed')}
+                        {hasRiskWarning && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-100">
+                            <AlertCircle className="w-4 h-4 text-yellow-800" />
+                            <span className="text-sm font-medium text-yellow-800">At Risk</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {getStatusBadge(po.Status, po.Supplier, activeFilter === 'confirmed')}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
   
-          {activeView === 'SUPPLIER INFORMATION' && (
+  {activeView === 'SUPPLIER INFORMATION' && (
   <div>
     <div className="flex items-center justify-between mb-8">
       <h2 className="text-3xl font-serif">Supplier Performance</h2>
       <select
         value={selectedSupplierFilter}
         onChange={(e) => setSelectedSupplierFilter(e.target.value)}
-        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black"
+        className="px-6 py-3 bg-white border-2 border-gray-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-all"
       >
         <option value="all">All Suppliers</option>
         {[...new Set(supplierInsights.map(s => s.Supplier))].sort().map(supplier => (
@@ -455,134 +697,340 @@ const SupplierCommand: React.FC = () => {
       </select>
     </div>
 
-    <div className="grid grid-cols-1 gap-8">
-      {([...new Set(supplierInsights.map(s => s.Supplier))].sort()
-        .filter(supplier => selectedSupplierFilter === 'all' || supplier === selectedSupplierFilter)
-        .map(supplier => {
+    {/* All Suppliers View - Donut Chart Cards */}
+    {selectedSupplierFilter === 'all' && (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...new Set(supplierInsights.map(s => s.Supplier))].sort().map(supplier => {
           const metrics = calculateSupplierMetrics(supplier);
           const risk = getRiskLevel(metrics.riskScore);
-          const supplierPOs = buyerData.filter(po => po.Supplier === supplier);
-          const contact = supplierPOs[0]?.['Supplier contact name'] || 'N/A';
-          const email = supplierPOs[0]?.['supplier_email'] || 'N/A';
           
           return (
-            <div key={supplier} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              {/* Header */}
-              <div className="bg-gray-50 p-6 border-b border-gray-200">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-2xl font-semibold mb-2">{supplier}</h3>
-                    <p className="text-gray-600">{contact}</p>
-                    <p className="text-sm text-gray-500">{email}</p>
-                  </div>
-                  <div className={`px-4 py-2 rounded-full font-semibold ${risk.color}`}>
-                    {risk.label}
-                  </div>
+            <div 
+              key={supplier} 
+              onClick={() => setSelectedSupplierFilter(supplier)}
+              className="bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-gray-400 transition-all cursor-pointer"
+            >
+              {/* Circular Risk Score */}
+              <div className="relative w-40 h-40 mx-auto mb-6">
+                <svg className="transform -rotate-90 w-40 h-40">
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="70"
+                    stroke="#E5E7EB"
+                    strokeWidth="16"
+                    fill="none"
+                  />
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="70"
+                    stroke={metrics.riskScore >= 50 ? '#EF4444' : metrics.riskScore >= 35 ? '#F59E0B' : '#10B981'}
+                    strokeWidth="16"
+                    fill="none"
+                    strokeDasharray={`${(metrics.riskScore / 100) * 439.8} 439.8`}
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-4xl font-bold text-gray-900">{metrics.riskScore}</div>
+                  <div className="text-xs text-gray-500 mt-1">Risk Score</div>
                 </div>
               </div>
 
-              {/* Metrics Grid */}
-              <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
-                  {/* Avg Response Time */}
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
-                      {metrics.avgResponseTime}h
-                    </div>
-                    <div className="text-sm text-gray-600">Avg Response Time</div>
-                  </div>
+              {/* Supplier Name */}
+              <h3 className="text-lg font-semibold text-center mb-3">
+                {supplier}
+              </h3>
+              
+              {/* Risk Label */}
+              <div className={`text-center px-4 py-2 rounded-full text-sm font-semibold mb-4 ${risk.color}`}>
+                {risk.label}
+              </div>
 
-                  {/* Escalation Rate */}
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
-                      {metrics.escalationRate}%
-                    </div>
-                    <div className="text-sm text-gray-600">Escalation Rate</div>
-                  </div>
-
-                  {/* On-time Deliveries */}
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600 mb-1">
-                      {metrics.onTimeDeliveries}%
-                    </div>
-                    <div className="text-sm text-gray-600">On-time Deliveries</div>
-                  </div>
-
-                  {/* Delay Rate */}
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-red-600 mb-1">
-                      {metrics.delayRate}%
-                    </div>
-                    <div className="text-sm text-gray-600">Delay Rate</div>
-                  </div>
-
-                  {/* Risk Score */}
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
-                      {metrics.riskScore}
-                    </div>
-                    <div className="text-sm text-gray-600">Risk Score</div>
-                    <div className="text-xs text-gray-500 mt-1">(0-100)</div>
-                  </div>
+              {/* Key Stats */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">On-time</span>
+                  <span className="font-semibold">{metrics.onTimeDeliveries}%</span>
                 </div>
-
-                {/* Visual Indicators */}
-                <div className="space-y-4">
-                  {/* Response Time Bar */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Response Time</span>
-                      <span className="text-sm text-gray-600">{metrics.avgResponseTime} hrs</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${metrics.avgResponseTime > 30 ? 'bg-red-500' : metrics.avgResponseTime > 20 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                        style={{ width: `${Math.min((metrics.avgResponseTime / 48) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* On-time Delivery Bar */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">On-time Performance</span>
-                      <span className="text-sm text-gray-600">{metrics.onTimeDeliveries}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full"
-                        style={{ width: `${metrics.onTimeDeliveries}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Risk Score Bar */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Risk Level</span>
-                      <span className="text-sm text-gray-600">{metrics.riskScore}/100</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${metrics.riskScore >= 70 ? 'bg-red-500' : metrics.riskScore >= 40 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                        style={{ width: `${metrics.riskScore}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Historical Orders */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="text-sm text-gray-600">
-                    Based on {metrics.totalOrders} historical orders
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg Response</span>
+                  <span className="font-semibold">{metrics.avgResponseTime}h</span>
                 </div>
               </div>
             </div>
           );
-        })
-      )}
-    </div>
+        })}
+      </div>
+    )}
+
+    {/* Individual Supplier Dashboard */}
+    {selectedSupplierFilter !== 'all' && (() => {
+      const supplier = selectedSupplierFilter;
+      const metrics = calculateSupplierMetrics(supplier);
+      const risk = getRiskLevel(metrics.riskScore);
+      const supplierPOs = buyerData.filter(po => po.Supplier === supplier);
+      const contacts = [...new Set(supplierInsights.filter(s => s.Supplier === supplier).map(s => s['Supplier contact']))];
+      
+      // Calculate active POs and at-risk POs
+      const activePOs = supplierPOs.filter(po => po.Status !== 'Delivered');
+      const atRiskPOs = activePOs.filter(po => {
+        const daysUntil = getDaysUntil(po['PO Delivery Date']);
+        return daysUntil <= 7 && !['Confirmed', 'On Way'].includes(po.Status);
+      });
+      
+      // Find high-escalation contacts
+      const highEscalationContacts = contacts.filter(contact => {
+        const contactMetrics = calculateContactMetrics(supplier, contact);
+        return contactMetrics && contactMetrics.escalationRate >= 40;
+      });
+      
+      return (
+        <div className="space-y-6">
+          {/* Header Card with Side-by-Side Layout */}
+          <div className="bg-white rounded-2xl border-2 border-gray-200 p-8">
+            <div className="flex items-start justify-between mb-6">
+              <h3 className="text-3xl font-semibold">{supplier}</h3>
+              <div className={`px-6 py-3 rounded-full font-semibold text-lg ${risk.color}`}>
+                {risk.label}
+              </div>
+            </div>
+
+            {/* Donut Chart + 2x2 Metrics Grid */}
+            <div className="flex gap-8 items-center">
+              {/* Donut Chart - Left Side */}
+              <div className="relative w-48 h-48 flex-shrink-0">
+                <svg className="transform -rotate-90 w-48 h-48">
+                  <circle
+                    cx="96"
+                    cy="96"
+                    r="80"
+                    stroke="#E5E7EB"
+                    strokeWidth="20"
+                    fill="none"
+                  />
+                  <circle
+                    cx="96"
+                    cy="96"
+                    r="80"
+                    stroke={metrics.riskScore >= 50 ? '#EF4444' : metrics.riskScore >= 35 ? '#F59E0B' : '#10B981'}
+                    strokeWidth="20"
+                    fill="none"
+                    strokeDasharray={`${(metrics.riskScore / 100) * 502.4} 502.4`}
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-5xl font-bold text-gray-900">{metrics.riskScore}</div>
+                  <div className="text-sm text-gray-500 mt-1">Risk Score</div>
+                </div>
+              </div>
+
+              {/* 2x2 Metrics Grid - Right Side */}
+              <div className="grid grid-cols-2 gap-4 flex-1">
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="text-4xl font-bold text-gray-900 mb-2">{metrics.avgResponseTime}h</div>
+                  <div className="text-sm text-gray-600">Avg Response</div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="text-4xl font-bold text-green-600 mb-2">{metrics.onTimeDeliveries}%</div>
+                  <div className="text-sm text-gray-600">On-time</div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="text-4xl font-bold text-orange-600 mb-2">{metrics.escalationRate}%</div>
+                  <div className="text-sm text-gray-600">Escalations</div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="text-4xl font-bold text-red-600 mb-2">{metrics.delayRate}%</div>
+                  <div className="text-sm text-gray-600">Delayed</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Active POs Section */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm text-gray-600">Active POs: </span>
+                  <span className="font-semibold">{activePOs.length} order{activePOs.length !== 1 ? 's' : ''}</span>
+                  {atRiskPOs.length > 0 && (
+                    <span className="text-red-600 ml-2">({atRiskPOs.length} at risk)</span>
+                  )}
+                </div>
+                <button 
+                  onClick={() => {
+                    setActiveView('PO MANAGEMENT');
+                    setSearchQuery(supplier);
+                  }}
+                  className="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                >
+                  View All POs →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Risks Alert Panel */}
+          {(atRiskPOs.length > 0 || highEscalationContacts.length > 0 || metrics.avgResponseTime > 24) && (
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+              <h4 className="font-semibold text-amber-900 mb-4 flex items-center gap-2 text-lg">
+                <AlertCircle className="w-5 h-5" />
+                Active Risks
+              </h4>
+              <div className="space-y-3">
+                {atRiskPOs.length > 0 && (
+                  <div className="flex items-start gap-3 bg-white rounded-lg p-4">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 mt-2 flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="font-medium text-amber-900 mb-1">
+                        {atRiskPOs.length} PO{atRiskPOs.length !== 1 ? 's' : ''} at risk
+                      </div>
+                      <div className="text-sm text-amber-800">
+                        Due within a week without confirmation
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {highEscalationContacts.length > 0 && (
+                  <div className="flex items-start gap-3 bg-white rounded-lg p-4">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 mt-2 flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="font-medium text-amber-900 mb-1">
+                        High escalation contacts detected
+                      </div>
+                      <div className="text-sm text-amber-800">
+                        {highEscalationContacts.join(', ')} {highEscalationContacts.length === 1 ? 'has' : 'have'} &gt;40% escalation rate
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {metrics.avgResponseTime > 24 && (
+                  <div className="flex items-start gap-3 bg-white rounded-lg p-4">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 mt-2 flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="font-medium text-amber-900 mb-1">
+                        Slow response time
+                      </div>
+                      <div className="text-sm text-amber-800">
+                        Average {metrics.avgResponseTime}h (threshold: 24h)
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Contact Performance */}
+          <div className="bg-white rounded-2xl border-2 border-gray-200 p-8">
+            <h4 className="text-xl font-semibold mb-6">Contact Performance</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {contacts.map(contact => {
+                const contactMetrics = calculateContactMetrics(supplier, contact);
+                if (!contactMetrics) return null;
+                
+                // Get the email for this contact - check buyerData first, then use supplier's email as fallback
+                let contactEmail = buyerData.find(
+                  po => po.Supplier === supplier && po['Supplier contact name'] === contact
+                )?.['supplier_email'] || '';
+                
+                // If not found, use the supplier's general email
+                if (!contactEmail) {
+                  contactEmail = buyerData.find(po => po.Supplier === supplier)?.['supplier_email'] || '';
+                }
+                
+                // Get active POs for this contact
+                const contactPOs = supplierPOs.filter(po => po['Supplier contact name'] === contact && po.Status !== 'Delivered');
+                
+                // Check if high escalation
+                const isHighEscalation = contactMetrics.escalationRate >= 40;
+                
+                return (
+                  <div key={contact} className="border-2 border-gray-200 rounded-xl p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h5 className="font-semibold text-lg mb-1">{contact}</h5>
+                        {contactEmail && <p className="text-sm text-gray-600 truncate">{contactEmail}</p>}
+                      </div>
+                      {isHighEscalation && (
+                        <div className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full whitespace-nowrap ml-2">
+                          ⚠️ High Escalation
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <div className="text-2xl font-bold text-gray-900">{contactMetrics.avgResponseTime}h</div>
+                        <div className="text-xs text-gray-600">Response</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-green-600">{contactMetrics.onTimeRate}%</div>
+                        <div className="text-xs text-gray-600">On-time</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-orange-600">{contactMetrics.escalationRate}%</div>
+                        <div className="text-xs text-gray-600">Escalations</div>
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="space-y-3 pt-4 border-t border-gray-200">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            const po = supplierPOs.find(p => p['Supplier contact name'] === contact);
+                            if (po) handleEmailSupplier(po);
+                          }}
+                          className="flex-1 px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-700 transition-colors"
+                        >
+                          Email
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const po = supplierPOs.find(p => p['Supplier contact name'] === contact);
+                            if (po) {
+                              setSelectedPO(po);
+                              setShowCallModal(true);
+                            }
+                          }}
+                          className="flex-1 px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-700 transition-colors"
+                        >
+                          Call
+                        </button>
+                      </div>
+                      
+                      {/* Active POs for this contact */}
+                      {contactPOs.length > 0 && (
+                        <div className="text-xs text-gray-600">
+                          Currently handling: {contactPOs.slice(0, 2).map((po, idx) => (
+                            <span key={po['PO Number']}>
+                              {idx > 0 && ', '}
+                              <button 
+                                onClick={() => setSelectedPO(po)}
+                                className="text-blue-600 hover:underline"
+                              >
+                                PO #{po['PO Number']}
+                              </button>
+                            </span>
+                          ))}
+                          {contactPOs.length > 2 && <span className="text-gray-500"> +{contactPOs.length - 2} more</span>}
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-gray-500">
+                        {contactMetrics.totalOrders} total orders
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    })()}
   </div>
 )}
         </main>
@@ -609,11 +1057,29 @@ const SupplierCommand: React.FC = () => {
               <div className="p-8 space-y-6">
                 <div>
                   {getStatusBadge(selectedPO.Status, selectedPO.Supplier, ['Confirmed', 'Delivered', 'On Way'].includes(selectedPO.Status))}
-                  {unreliableSuppliers.includes(selectedPO.Supplier) && ['Confirmed', 'Delivered', 'On Way'].includes(selectedPO.Status) && (
-                    <div className="mt-2 text-sm text-yellow-700">
-                      <span className="font-medium">⚠️ Unreliable Supplier:</span> This supplier has a history of delayed deliveries.
-                    </div>
-                  )}
+                  {(() => {
+                    const supplierRisk = getRiskLevelForPO(selectedPO);
+                    const contactMetrics = calculateContactMetrics(selectedPO.Supplier, selectedPO['Supplier contact name']);
+                    const hasHighEscalationContact = contactMetrics && contactMetrics.escalationRate >= 40;
+                    const isUnreliableSupplier = supplierRisk === 'medium' || supplierRisk === 'high';
+                    
+                    if (isUnreliableSupplier || hasHighEscalationContact) {
+                      return (
+                        <div className="mt-2 text-sm text-yellow-700">
+                          {isUnreliableSupplier && hasHighEscalationContact && (
+                            <span><span className="font-medium">⚠️ Unreliable Supplier & High Escalation Contact:</span> This supplier has a history of delayed deliveries and the contact has a high escalation rate.</span>
+                          )}
+                          {isUnreliableSupplier && !hasHighEscalationContact && (
+                            <span><span className="font-medium">⚠️ Unreliable Supplier:</span> This supplier has a history of delayed deliveries.</span>
+                          )}
+                          {!isUnreliableSupplier && hasHighEscalationContact && (
+                            <span><span className="font-medium">⚠️ High Escalation Contact:</span> {selectedPO['Supplier contact name']} has a high escalation rate ({contactMetrics?.escalationRate}%).</span>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
   
                 <div>
@@ -656,7 +1122,7 @@ const SupplierCommand: React.FC = () => {
                     </div>
                   )}
   
-                  {isThisWeek(selectedPO['PO Delivery Date']) && !['Confirmed', 'Delivered'].includes(selectedPO.Status) && selectedPO.Status !== 'Pending' && (
+                  {selectedPO.Status === 'Email Sent' && (
                     <div className="space-y-3">
                       <div className="border-l-4 border-gray-300 pl-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -673,26 +1139,8 @@ const SupplierCommand: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="bg-red-50 border border-red-300 rounded-lg p-3 text-sm">
-                        <span className="font-medium text-red-800">⚠️ Escalation Required:</span> <span className="text-red-700">Due date is within 1 week. A phone call must be scheduled.</span>
-                      </div>
-                    </div>
-                  )}
-  
-                  {selectedPO.Status === 'Email Sent' && !isThisWeek(selectedPO['PO Delivery Date']) && (
-                    <div className="border-l-4 border-gray-300 pl-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Mail className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-700">Email</span>
-                      </div>
-                      <div className="bg-amber-50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-xs font-semibold">P</div>
-                          <span className="font-semibold text-sm">Paul</span>
-                        </div>
-                        <p className="text-sm text-gray-800">
-                          Sent email for PO #{selectedPO['PO Number']} requesting update.
-                        </p>
+                      <div className="bg-blue-50 border border-blue-300 rounded-lg p-3 text-sm">
+                        <span className="font-medium text-blue-800">ℹ️ Awaiting Response:</span> <span className="text-blue-700">Will escalate to phone call if no response within 72 hours.</span>
                       </div>
                     </div>
                   )}
@@ -714,21 +1162,23 @@ const SupplierCommand: React.FC = () => {
                           </p>
                         </div>
                       </div>
+                      
+                      <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 text-sm">
+                        <span className="font-medium text-orange-800">⏱️ No Response:</span> <span className="text-orange-700">72 hours elapsed. Escalating to phone call.</span>
+                      </div>
   
-                      <div className="border-l-4 border-gray-300 pl-4">
+                      <div className="border-l-4 border-blue-500 pl-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <Phone className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm font-medium text-gray-700">Phone Call</span>
+                          <Phone className="w-4 h-4 text-blue-500" />
+                          <span className="text-sm font-medium text-blue-700">Phone Call Initiated</span>
                         </div>
-                        <div className="bg-green-50 rounded-lg p-4">
+                        <div className="bg-blue-50 rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                              {selectedPO.Supplier.charAt(0)}
-                            </div>
-                            <span className="font-semibold text-sm">{selectedPO.Supplier}</span>
+                            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-xs font-semibold">P</div>
+                            <span className="font-semibold text-sm">Paul</span>
                           </div>
                           <p className="text-sm text-gray-800">
-                            Confirmed delivery for {formatDate(selectedPO['PO Delivery Date'])}, Tracking #98ABC34.
+                            Calling {selectedPO['Supplier contact name']} at {selectedPO.Supplier}...
                           </p>
                         </div>
                       </div>
@@ -752,27 +1202,22 @@ const SupplierCommand: React.FC = () => {
                           </p>
                         </div>
                       </div>
+                      
+                      <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 text-sm">
+                        <span className="font-medium text-orange-800">⏱️ No Response:</span> <span className="text-orange-700">72 hours elapsed. Escalating to phone call.</span>
+                      </div>
   
                       <div className="border-l-4 border-gray-300 pl-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Phone className="w-4 h-4 text-gray-500" />
                           <span className="text-sm font-medium text-gray-700">Phone Call</span>
                         </div>
-                        <div className="bg-amber-50 rounded-lg p-4 mb-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-xs font-semibold">P</div>
-                            <span className="font-semibold text-sm">Paul</span>
-                          </div>
-                          <p className="text-sm text-gray-800">
-                            Initiating call with {selectedPO.Supplier}...
-                          </p>
-                        </div>
                         <div className="bg-green-50 rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-xs font-semibold">
                               {selectedPO.Supplier.charAt(0)}
                             </div>
-                            <span className="font-semibold text-sm">{selectedPO.Supplier}</span>
+                            <span className="font-semibold text-sm">{selectedPO['Supplier contact name']}</span>
                           </div>
                           <p className="text-sm text-gray-800">
                             Confirmed delivery for {formatDate(selectedPO['PO Delivery Date'])}, Tracking #98ABC34.
@@ -788,8 +1233,46 @@ const SupplierCommand: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  
+                  {selectedPO.Status === 'Delayed' && (
+                    <div className="space-y-3">
+                      <div className="border-l-4 border-gray-300 pl-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Mail className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm font-medium text-gray-700">Email</span>
+                        </div>
+                        <div className="bg-amber-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-xs font-semibold">P</div>
+                            <span className="font-semibold text-sm">Paul</span>
+                          </div>
+                          <p className="text-sm text-gray-800">
+                            Sent email for PO #{selectedPO['PO Number']} requesting update.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="border-l-4 border-red-500 pl-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Phone className="w-4 h-4 text-red-500" />
+                          <span className="text-sm font-medium text-red-700">Delay Notification</span>
+                        </div>
+                        <div className="bg-red-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                              {selectedPO.Supplier.charAt(0)}
+                            </div>
+                            <span className="font-semibold text-sm">{selectedPO['Supplier contact name']}</span>
+                          </div>
+                          <p className="text-sm text-gray-800">
+                            Supplier indicated shipment will be delayed. Originally scheduled for {formatDate(selectedPO['PO Delivery Date'])}, new ETA to be provided.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
   
-                  {(selectedPO.Status === 'At Risk' || selectedPO.Status === 'Delayed') && (
+                  {selectedPO.Status === 'At Risk' && (
                     <div className="space-y-3">
                       <div className="border-l-4 border-gray-300 pl-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -844,19 +1327,19 @@ const SupplierCommand: React.FC = () => {
                 <div className="flex gap-3 pt-4">
                   <button 
                     onClick={() => handleEmailSupplier(selectedPO)}
-                    className="flex-1 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+                    className="flex-1 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-700 transition-colors font-medium"
                   >
                     Email Supplier
                   </button>
                   <button 
                     onClick={() => setShowCallModal(true)}
-                    className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                    className="flex-1 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-700 transition-colors font-medium"
                   >
                     Call Supplier
                   </button>
                   <button 
                     onClick={() => setShowStatusUpdate(true)}
-                    className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                    className="flex-1 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-700 transition-colors font-medium"
                   >
                     Update Status
                   </button>
