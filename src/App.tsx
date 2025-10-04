@@ -16,6 +16,26 @@ interface POData {
   'Status': string;
 }
 
+interface SupplierInsight {
+  'PO Number': string;
+  'PO line': string;
+  'PO Schedule Line': string;
+  'Supplier': string;
+  'Supplier contact': string;
+  'Delivery Status': string;
+  'Phone Escalation': string;
+  'Response Time (hrs)': string;
+}
+
+interface SupplierMetrics {
+  avgResponseTime: number;
+  escalationRate: number;
+  onTimeDeliveries: number;
+  delayRate: number;
+  riskScore: number;
+  totalOrders: number;
+}
+
 const HappyRobotLogo = () => (
   <div className="flex items-center gap-2">
     <div className="flex gap-0.5">
@@ -27,6 +47,9 @@ const HappyRobotLogo = () => (
 );
 
 const SupplierCommand: React.FC = () => {
+  // ALL useState hooks must be here at the top
+  const [supplierInsights, setSupplierInsights] = useState<SupplierInsight[]>([]);
+  const [selectedSupplierFilter, setSelectedSupplierFilter] = useState<string>('all');
   const [activeView, setActiveView] = useState<'PO MANAGEMENT' | 'SUPPLIER INFORMATION'>('PO MANAGEMENT');
   const [activeFilter, setActiveFilter] = useState<'pending' | 'confirmed'>('pending');
   const [selectedPO, setSelectedPO] = useState<POData | null>(null);
@@ -38,66 +61,133 @@ const SupplierCommand: React.FC = () => {
 
   const unreliableSuppliers = ['AeroCraft Tooling Co', 'MechaSupplies Inc'];
 
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await fetch('/suppliercommanddata.csv');
-        const fileContent = await response.text();
+        // Load PO data
+        const poResponse = await fetch('/suppliercommanddata.csv');
+        const poContent = await poResponse.text();
         
-        const lines = fileContent.split(/\r?\n/).filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim());
+        const poLines = poContent.split(/\r?\n/).filter(line => line.trim());
+        const poHeaders = poLines[0].split(',').map(h => h.trim());
         
-        const data: POData[] = [];
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i];
+        const poDataArray: POData[] = [];
+        for (let i = 1; i < poLines.length; i++) {
+          const line = poLines[i];
           const values = line.split(',').map(v => v.trim());
           
           const row: any = {};
-          headers.forEach((header, index) => {
+          poHeaders.forEach((header, index) => {
             row[header] = values[index] || '';
           });
           
           if (row['PO Number']) {
-            data.push(row as POData);
+            poDataArray.push(row as POData);
           }
         }
         
-        console.log('Successfully loaded', data.length, 'PO records from CSV');
-        setPOData(data);
+        // Load supplier insights data
+        const insightsResponse = await fetch('/supplierinsights.csv');
+        const insightsContent = await insightsResponse.text();
+        
+        const insightsLines = insightsContent.split(/\r?\n/).filter(line => line.trim());
+        const insightsHeaders = insightsLines[0].split(',').map(h => h.trim());
+        
+        const insightsArray: SupplierInsight[] = [];
+        for (let i = 1; i < insightsLines.length; i++) {
+          const line = insightsLines[i];
+          const values = line.split(',').map(v => v.trim());
+          
+          const row: any = {};
+          insightsHeaders.forEach((header, index) => {
+            row[header] = values[index] || '';
+          });
+          
+          if (row['PO Number']) {
+            insightsArray.push(row as SupplierInsight);
+          }
+        }
+        
+        console.log('Successfully loaded', poDataArray.length, 'PO records');
+        console.log('Successfully loaded', insightsArray.length, 'supplier insight records');
+        setPOData(poDataArray);
+        setSupplierInsights(insightsArray);
         setLoading(false);
       } catch (error) {
-        console.error('Error loading CSV file:', error);
+        console.error('Error loading CSV files:', error);
         
+        // Fallback demo data
         const demoData: POData[] = [
           { 'PO Number': '8394266', 'PO line': '1', 'PO Schedule Line': '1', 'Item Code': '2914-1122', 'PO Delivery Date': '09/30/2025', 'PO Open Qty': '3', 'Buyer': 'Carlos', 'Buyer email': 'carlos@happyrobot.ai', 'supplier_email': 'aerocraft1@example.com', 'Supplier': 'AeroCraft Tooling Co', 'Supplier contact name': 'Miles Ortega', 'Status': 'Delivered' },
-          { 'PO Number': '4973008', 'PO line': '1', 'PO Schedule Line': '1', 'Item Code': '1259-6670', 'PO Delivery Date': '10/01/2025', 'PO Open Qty': '42', 'Buyer': 'John', 'Buyer email': 'john@happyrobot.ai', 'supplier_email': 'aerocrafttoolingco@example.com', 'Supplier': 'AeroCraft Tooling Co', 'Supplier contact name': 'Federico Ramos', 'Status': 'Confirmed' },
-          { 'PO Number': '2531545', 'PO line': '2', 'PO Schedule Line': '12', 'Item Code': '2874-1239', 'PO Delivery Date': '11/07/2025', 'PO Open Qty': '33', 'Buyer': 'Nikhil', 'Buyer email': 'nikhil@happyrobot.ai', 'supplier_email': 'steelforgeltd@example.com', 'Supplier': 'SteelForge Ltd', 'Supplier contact name': 'Jordan Parker', 'Status': 'Delayed' },
-          { 'PO Number': '8816480', 'PO line': '1', 'PO Schedule Line': '10', 'Item Code': '2457-9438', 'PO Delivery Date': '10/30/2025', 'PO Open Qty': '38', 'Buyer': 'Federico', 'Buyer email': 'federico@happyrobot.ai', 'supplier_email': 'aerocrafttoolingco@example.com', 'Supplier': 'AeroCraft Tooling Co', 'Supplier contact name': 'Miles Ortega', 'Status': 'Confirmed' },
-          { 'PO Number': '9070451', 'PO line': '3', 'PO Schedule Line': '5', 'Item Code': '5082-4277', 'PO Delivery Date': '10/01/2025', 'PO Open Qty': '30', 'Buyer': 'John', 'Buyer email': 'john@happyrobot.ai', 'supplier_email': 'aerocrafttoolingco@example.com', 'Supplier': 'AeroCraft Tooling Co', 'Supplier contact name': 'Federico Ramos', 'Status': 'Delayed' },
-          { 'PO Number': '2263688', 'PO line': '1', 'PO Schedule Line': '15', 'Item Code': '9486-6387', 'PO Delivery Date': '10/02/2025', 'PO Open Qty': '22', 'Buyer': 'Carlos', 'Buyer email': 'carlos@happyrobot.ai', 'supplier_email': 'steelforgeltd@example.com', 'Supplier': 'SteelForge Ltd', 'Supplier contact name': 'Jordan Parker', 'Status': 'Confirmed' },
-          { 'PO Number': '1664203', 'PO line': '2', 'PO Schedule Line': '8', 'Item Code': '7441-2093', 'PO Delivery Date': '10/06/2025', 'PO Open Qty': '15', 'Buyer': 'Denise', 'Buyer email': 'denise@happyrobot.ai', 'supplier_email': 'mechasuppliesinc@example.com', 'Supplier': 'MechaSupplies Inc', 'Supplier contact name': 'Alex Chen', 'Status': 'Phone Call' },
-          { 'PO Number': '1688919', 'PO line': '1', 'PO Schedule Line': '3', 'Item Code': '3892-5517', 'PO Delivery Date': '10/08/2025', 'PO Open Qty': '28', 'Buyer': 'Carlos', 'Buyer email': 'carlos@happyrobot.ai', 'supplier_email': 'skyworksparts@example.com', 'Supplier': 'SkyWorks Parts', 'Supplier contact name': 'Sarah Kim', 'Status': 'On Way' },
-          { 'PO Number': '2020468', 'PO line': '3', 'PO Schedule Line': '6', 'Item Code': '1648-3729', 'PO Delivery Date': '10/03/2025', 'PO Open Qty': '19', 'Buyer': 'John', 'Buyer email': 'john@happyrobot.ai', 'supplier_email': 'skyworksparts@example.com', 'Supplier': 'SkyWorks Parts', 'Supplier contact name': 'Sarah Kim', 'Status': 'Delayed' },
-          { 'PO Number': '7712008', 'PO line': '1', 'PO Schedule Line': '4', 'Item Code': '8851-4462', 'PO Delivery Date': '10/04/2025', 'PO Open Qty': '25', 'Buyer': 'Carlos', 'Buyer email': 'carlos@happyrobot.ai', 'supplier_email': 'mechasuppliesinc@example.com', 'Supplier': 'MechaSupplies Inc', 'Supplier contact name': 'Alex Chen', 'Status': 'Delayed' },
-          { 'PO Number': '2152387', 'PO line': '2', 'PO Schedule Line': '9', 'Item Code': '4729-8831', 'PO Delivery Date': '10/07/2025', 'PO Open Qty': '17', 'Buyer': 'Nikhil', 'Buyer email': 'nikhil@happyrobot.ai', 'supplier_email': 'aerocrafttoolingco@example.com', 'Supplier': 'AeroCraft Tooling Co', 'Supplier contact name': 'Miles Ortega', 'Status': 'Delayed' },
-          { 'PO Number': '3345612', 'PO line': '1', 'PO Schedule Line': '7', 'Item Code': '5612-3394', 'PO Delivery Date': '10/15/2025', 'PO Open Qty': '44', 'Buyer': 'Carlos', 'Buyer email': 'carlos@happyrobot.ai', 'supplier_email': 'steelforgeltd@example.com', 'Supplier': 'SteelForge Ltd', 'Supplier contact name': 'Jordan Parker', 'Status': 'Email Sent' },
-          { 'PO Number': '5512389', 'PO line': '3', 'PO Schedule Line': '2', 'Item Code': '9223-7654', 'PO Delivery Date': '10/20/2025', 'PO Open Qty': '31', 'Buyer': 'Denise', 'Buyer email': 'denise@happyrobot.ai', 'supplier_email': 'skyworksparts@example.com', 'Supplier': 'SkyWorks Parts', 'Supplier contact name': 'Sarah Kim', 'Status': 'Pending' },
-          { 'PO Number': '6789123', 'PO line': '1', 'PO Schedule Line': '11', 'Item Code': '1447-9982', 'PO Delivery Date': '10/25/2025', 'PO Open Qty': '21', 'Buyer': 'Federico', 'Buyer email': 'federico@happyrobot.ai', 'supplier_email': 'mechasuppliesinc@example.com', 'Supplier': 'MechaSupplies Inc', 'Supplier contact name': 'Alex Chen', 'Status': 'At Risk' },
-          { 'PO Number': '8923456', 'PO line': '2', 'PO Schedule Line': '14', 'Item Code': '6654-2217', 'PO Delivery Date': '11/01/2025', 'PO Open Qty': '36', 'Buyer': 'John', 'Buyer email': 'john@happyrobot.ai', 'supplier_email': 'aerocrafttoolingco@example.com', 'Supplier': 'AeroCraft Tooling Co', 'Supplier contact name': 'Federico Ramos', 'Status': 'Phone Call' },
-          { 'PO Number': '4556789', 'PO line': '1', 'PO Schedule Line': '6', 'Item Code': '3389-4451', 'PO Delivery Date': '11/10/2025', 'PO Open Qty': '27', 'Buyer': 'Carlos', 'Buyer email': 'carlos@happyrobot.ai', 'supplier_email': 'steelforgeltd@example.com', 'Supplier': 'SteelForge Ltd', 'Supplier contact name': 'Jordan Parker', 'Status': 'Confirmed' },
-          { 'PO Number': '7823456', 'PO line': '3', 'PO Schedule Line': '13', 'Item Code': '7712-5539', 'PO Delivery Date': '11/15/2025', 'PO Open Qty': '18', 'Buyer': 'Nikhil', 'Buyer email': 'nikhil@happyrobot.ai', 'supplier_email': 'skyworksparts@example.com', 'Supplier': 'SkyWorks Parts', 'Supplier contact name': 'Sarah Kim', 'Status': 'On Way' },
-          { 'PO Number': '3398712', 'PO line': '2', 'PO Schedule Line': '5', 'Item Code': '2218-6643', 'PO Delivery Date': '11/20/2025', 'PO Open Qty': '40', 'Buyer': 'Denise', 'Buyer email': 'denise@happyrobot.ai', 'supplier_email': 'mechasuppliesinc@example.com', 'Supplier': 'MechaSupplies Inc', 'Supplier contact name': 'Alex Chen', 'Status': 'Email Sent' },
-          { 'PO Number': '9912345', 'PO line': '1', 'PO Schedule Line': '8', 'Item Code': '8834-3329', 'PO Delivery Date': '11/25/2025', 'PO Open Qty': '23', 'Buyer': 'Federico', 'Buyer email': 'federico@happyrobot.ai', 'supplier_email': 'aerocrafttoolingco@example.com', 'Supplier': 'AeroCraft Tooling Co', 'Supplier contact name': 'Miles Ortega', 'Status': 'Pending' },
-          { 'PO Number': '2234567', 'PO line': '2', 'PO Schedule Line': '10', 'Item Code': '5512-7798', 'PO Delivery Date': '12/01/2025', 'PO Open Qty': '35', 'Buyer': 'John', 'Buyer email': 'john@happyrobot.ai', 'supplier_email': 'steelforgeltd@example.com', 'Supplier': 'SteelForge Ltd', 'Supplier contact name': 'Jordan Parker', 'Status': 'Delivered' }
+          { 'PO Number': '2263688', 'PO line': '1', 'PO Schedule Line': '15', 'Item Code': '9486-6387', 'PO Delivery Date': '10/02/2025', 'PO Open Qty': '22', 'Buyer': 'Carlos', 'Buyer email': 'carlos@happyrobot.ai', 'supplier_email': 'steelforgeltd@example.com', 'Supplier': 'SteelForge Ltd', 'Supplier contact name': 'Jordan Parker', 'Status': 'Confirmed' }
         ];
         
         setPOData(demoData);
+        setSupplierInsights([]);
         setLoading(false);
       }
     };
     
     loadData();
   }, []);
+
+  const calculateSupplierMetrics = (supplier: string): SupplierMetrics => {
+    const supplierData = supplierInsights.filter(row => row.Supplier === supplier);
+    
+    if (supplierData.length === 0) {
+      return {
+        avgResponseTime: 0,
+        escalationRate: 0,
+        onTimeDeliveries: 0,
+        delayRate: 0,
+        riskScore: 0,
+        totalOrders: 0
+      };
+    }
+    
+    // Avg Response Time
+    const avgResponseTime = Math.round(
+      supplierData.reduce((sum, row) => sum + parseInt(row['Response Time (hrs)']), 0) / supplierData.length
+    );
+    
+    // Escalation Rate (phone calls)
+    const escalationRate = Math.round(
+      (supplierData.filter(row => row['Phone Escalation'] === 'True').length / supplierData.length) * 100
+    );
+    
+    // On-time deliveries (not Delayed or Incomplete)
+    const onTimeDeliveries = Math.round(
+      (supplierData.filter(row => !['Delayed', 'Incomplete'].includes(row['Delivery Status'])).length / supplierData.length) * 100
+    );
+    
+    // Delay Rate
+    const delayRate = Math.round(
+      (supplierData.filter(row => ['Delayed', 'Incomplete'].includes(row['Delivery Status'])).length / supplierData.length) * 100
+    );
+    
+    // Risk Score (0-100)
+    const responseRisk = Math.min((avgResponseTime / 48) * 35, 35); // 48hrs baseline
+    const escalationRisk = (escalationRate / 100) * 35;
+    const delayRisk = (delayRate / 100) * 30;
+    const riskScore = Math.round(responseRisk + escalationRisk + delayRisk);
+    
+    return {
+      avgResponseTime,
+      escalationRate,
+      onTimeDeliveries,
+      delayRate,
+      riskScore,
+      totalOrders: supplierData.length
+    };
+  };
+
+  
+  const getRiskLevel = (score: number): { label: string; color: string } => {
+    if (score >= 70) return { label: 'High Risk', color: 'text-red-600 bg-red-100' };
+    if (score >= 40) return { label: 'Medium Risk', color: 'text-yellow-600 bg-yellow-100' };
+    return { label: 'Low Risk', color: 'text-green-600 bg-green-100' };
+  };
 
   const getStatusColor = (status: string, isThisWeek: boolean = false): string => {
     if (isThisWeek && !['Confirmed', 'Delivered'].includes(status)) {
@@ -350,34 +440,151 @@ const SupplierCommand: React.FC = () => {
           )}
   
           {activeView === 'SUPPLIER INFORMATION' && (
-            <div>
-              <h2 className="text-3xl font-serif mb-8">Supplier Directory</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[...new Set(buyerData.map(po => po.Supplier))].sort().map(supplier => {
-                  const supplierPOs = buyerData.filter(po => po.Supplier === supplier);
-                  const contact = supplierPOs[0]['Supplier contact name'];
-                  const email = supplierPOs[0]['supplier_email'];
-                  const isUnreliable = unreliableSuppliers.includes(supplier);
-                  
-                  return (
-                    <div key={supplier} className="bg-white rounded-2xl p-6 shadow-sm">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-xl font-semibold">{supplier}</h3>
-                        {isUnreliable && (
-                          <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">Unreliable</span>
-                        )}
-                      </div>
-                      <p className="text-gray-700 mb-1">{contact}</p>
-                      <p className="text-sm text-gray-600 mb-3">{email}</p>
-                      <div className="text-sm text-gray-500">
-                        {supplierPOs.length} active PO{supplierPOs.length !== 1 ? 's' : ''}
-                      </div>
+  <div>
+    <div className="flex items-center justify-between mb-8">
+      <h2 className="text-3xl font-serif">Supplier Performance</h2>
+      <select
+        value={selectedSupplierFilter}
+        onChange={(e) => setSelectedSupplierFilter(e.target.value)}
+        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black"
+      >
+        <option value="all">All Suppliers</option>
+        {[...new Set(supplierInsights.map(s => s.Supplier))].sort().map(supplier => (
+          <option key={supplier} value={supplier}>{supplier}</option>
+        ))}
+      </select>
+    </div>
+
+    <div className="grid grid-cols-1 gap-8">
+      {([...new Set(supplierInsights.map(s => s.Supplier))].sort()
+        .filter(supplier => selectedSupplierFilter === 'all' || supplier === selectedSupplierFilter)
+        .map(supplier => {
+          const metrics = calculateSupplierMetrics(supplier);
+          const risk = getRiskLevel(metrics.riskScore);
+          const supplierPOs = buyerData.filter(po => po.Supplier === supplier);
+          const contact = supplierPOs[0]?.['Supplier contact name'] || 'N/A';
+          const email = supplierPOs[0]?.['supplier_email'] || 'N/A';
+          
+          return (
+            <div key={supplier} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {/* Header */}
+              <div className="bg-gray-50 p-6 border-b border-gray-200">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-2xl font-semibold mb-2">{supplier}</h3>
+                    <p className="text-gray-600">{contact}</p>
+                    <p className="text-sm text-gray-500">{email}</p>
+                  </div>
+                  <div className={`px-4 py-2 rounded-full font-semibold ${risk.color}`}>
+                    {risk.label}
+                  </div>
+                </div>
+              </div>
+
+              {/* Metrics Grid */}
+              <div className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
+                  {/* Avg Response Time */}
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {metrics.avgResponseTime}h
                     </div>
-                  );
-                })}
+                    <div className="text-sm text-gray-600">Avg Response Time</div>
+                  </div>
+
+                  {/* Escalation Rate */}
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {metrics.escalationRate}%
+                    </div>
+                    <div className="text-sm text-gray-600">Escalation Rate</div>
+                  </div>
+
+                  {/* On-time Deliveries */}
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600 mb-1">
+                      {metrics.onTimeDeliveries}%
+                    </div>
+                    <div className="text-sm text-gray-600">On-time Deliveries</div>
+                  </div>
+
+                  {/* Delay Rate */}
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-red-600 mb-1">
+                      {metrics.delayRate}%
+                    </div>
+                    <div className="text-sm text-gray-600">Delay Rate</div>
+                  </div>
+
+                  {/* Risk Score */}
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {metrics.riskScore}
+                    </div>
+                    <div className="text-sm text-gray-600">Risk Score</div>
+                    <div className="text-xs text-gray-500 mt-1">(0-100)</div>
+                  </div>
+                </div>
+
+                {/* Visual Indicators */}
+                <div className="space-y-4">
+                  {/* Response Time Bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Response Time</span>
+                      <span className="text-sm text-gray-600">{metrics.avgResponseTime} hrs</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${metrics.avgResponseTime > 30 ? 'bg-red-500' : metrics.avgResponseTime > 20 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                        style={{ width: `${Math.min((metrics.avgResponseTime / 48) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* On-time Delivery Bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">On-time Performance</span>
+                      <span className="text-sm text-gray-600">{metrics.onTimeDeliveries}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full"
+                        style={{ width: `${metrics.onTimeDeliveries}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Risk Score Bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Risk Level</span>
+                      <span className="text-sm text-gray-600">{metrics.riskScore}/100</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${metrics.riskScore >= 70 ? 'bg-red-500' : metrics.riskScore >= 40 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                        style={{ width: `${metrics.riskScore}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Historical Orders */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="text-sm text-gray-600">
+                    Based on {metrics.totalOrders} historical orders
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+          );
+        })
+      )}
+    </div>
+  </div>
+)}
         </main>
   
         {selectedPO && (

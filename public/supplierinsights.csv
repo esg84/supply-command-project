@@ -1,0 +1,81 @@
+PO Number,PO line,PO Schedule Line,Supplier,Supplier contact,Delivery Status,Phone Escalation,Response Time (hrs)
+8812311,4,9,SteelForge Ltd,Sofia Martins,Delivered,True,44
+8492589,3,3,SkyWorks Parts,Denise Patel,Delivered,False,19
+7646461,4,11,AeroCraft Tooling Co,Miles Ortega,Delivered,False,20
+1598154,2,4,AeroCraft Tooling Co,Federico Ramos,Delivered,False,17
+4276948,5,4,MechaSupplies Inc,Priya Sharma,Delivered,True,13
+2395922,3,6,MechaSupplies Inc,Priya Sharma,Delivered,True,28
+2810713,4,2,AeroCraft Tooling Co,Federico Ramos,Delivered,False,9
+4518474,1,8,AeroCraft Tooling Co,Federico Ramos,Delivered,False,19
+4330111,3,6,SteelForge Ltd,Taylor Reed,Delivered,False,7
+5133703,1,1,AeroCraft Tooling Co,Federico Ramos,Delivered,False,21
+4160583,4,9,SkyWorks Parts,Roberto Alvarez,Delivered,False,12
+8059107,2,1,AeroCraft Tooling Co,Clara Nguyen,Delivered,False,10
+4535130,2,7,MechaSupplies Inc,Jamie Li,Delayed,True,23
+8407840,3,1,SkyWorks Parts,Denise Patel,Delivered,True,20
+2231423,1,2,MechaSupplies Inc,Priya Sharma,Incomplete,False,12
+9115550,5,3,SteelForge Ltd,Taylor Reed,Incomplete,True,34
+4831637,5,4,SkyWorks Parts,Hannah Kim,Delayed,False,36
+2316974,4,1,SteelForge Ltd,Jordan Parker,Delivered,True,17
+7570141,3,7,MechaSupplies Inc,Jamie Li,Delivered,True,21
+4831854,4,9,AeroCraft Tooling Co,Federico Ramos,Delayed,False,23
+4563484,2,12,AeroCraft Tooling Co,Clara Nguyen,Delayed,True,11
+7187191,5,10,SkyWorks Parts,Hannah Kim,Delivered,True,49
+6552670,5,10,SkyWorks Parts,Hannah Kim,Delivered,True,13
+6231214,1,1,MechaSupplies Inc,Ethan Brooks,Delivered,True,16
+6218772,3,3,AeroCraft Tooling Co,Miles Ortega,Delivered,False,49
+6902796,1,11,SkyWorks Parts,Hannah Kim,Delivered,True,14
+9387360,5,1,SteelForge Ltd,Taylor Reed,Delivered,False,18
+2939116,3,7,AeroCraft Tooling Co,Federico Ramos,Delivered,True,37
+8761513,5,2,SteelForge Ltd,Jordan Parker,Delayed,False,9
+2893894,4,10,AeroCraft Tooling Co,Federico Ramos,Delivered,True,27
+6050489,2,11,AeroCraft Tooling Co,Clara Nguyen,Delivered,True,11
+5051424,3,7,SteelForge Ltd,Jordan Parker,Incomplete,True,26
+4593499,4,4,SteelForge Ltd,Taylor Reed,Delayed,True,26
+2076074,3,3,AeroCraft Tooling Co,Miles Ortega,Delayed,False,14
+7418092,5,8,SkyWorks Parts,Hannah Kim,Delivered,False,24
+1528243,3,10,MechaSupplies Inc,Jamie Li,Delivered,False,4
+1320679,2,7,MechaSupplies Inc,Priya Sharma,Delivered,False,19
+2934494,4,2,SkyWorks Parts,Denise Patel,Delivered,False,31
+4322733,2,8,MechaSupplies Inc,Jamie Li,Delivered,False,11
+4799311,3,6,AeroCraft Tooling Co,Federico Ramos,Delivered,False,5
+4756801,1,7,SkyWorks Parts,Hannah Kim,Delivered,True,35
+9433074,3,8,AeroCraft Tooling Co,Clara Nguyen,Delivered,False,10
+3071718,2,4,AeroCraft Tooling Co,Miles Ortega,Delivered,True,69
+1262530,3,9,MechaSupplies Inc,Priya Sharma,Delivered,False,11
+9178011,1,4,SteelForge Ltd,Jordan Parker,Delivered,True,45
+3357202,4,3,MechaSupplies Inc,Ethan Brooks,Delivered,False,44
+2443234,2,8,SteelForge Ltd,Jordan Parker,Delivered,False,10
+7395759,5,4,MechaSupplies Inc,Priya Sharma,Delivered,False,18
+9349141,2,7,MechaSupplies Inc,Ethan Brooks,Delivered,True,7
+7720683,5,10,AeroCraft Tooling Co,Miles Ortega,Delivered,False,12
+8699649,4,7,SkyWorks Parts,Denise Patel,Delayed,False,10
+6321978,1,4,SteelForge Ltd,Sofia Martins,Delayed,True,12
+1382284,1,4,MechaSupplies Inc,Jamie Li,Delivered,False,15
+9368856,1,8,SkyWorks Parts,Roberto Alvarez,Delivered,True,29
+4317339,5,7,MechaSupplies Inc,Ethan Brooks,Delayed,False,7
+9959113,2,9,SkyWorks Parts,Roberto Alvarez,Delivered,False,6
+6831690,2,6,SkyWorks Parts,Denise Patel,Delayed,False,33
+3247009,2,3,SkyWorks Parts,Denise Patel,Delivered,True,24
+8073787,5,12,AeroCraft Tooling Co,Clara Nguyen,Delivered,True,7
+6999324,3,2,SkyWorks Parts,Roberto Alvarez,Delivered,False,37
+4171016,1,8,MechaSupplies Inc,Ethan Brooks,Delayed,False,17
+4180475,2,2,SteelForge Ltd,Taylor Reed,Delivered,False,13
+2597969,5,1,MechaSupplies Inc,Ethan Brooks,Delivered,False,11
+8154533,5,6,SteelForge Ltd,Jordan Parker,Incomplete,False,11
+1685813,2,3,AeroCraft Tooling Co,Miles Ortega,Delivered,False,10
+9599343,1,6,SkyWorks Parts,Denise Patel,Delivered,False,45
+4203573,5,10,SteelForge Ltd,Sofia Martins,Delayed,False,39
+3234977,3,9,SkyWorks Parts,Hannah Kim,Delayed,False,21
+4470010,2,2,SkyWorks Parts,Hannah Kim,Delivered,False,27
+5579769,3,6,AeroCraft Tooling Co,Federico Ramos,Delivered,False,14
+2289060,4,9,SkyWorks Parts,Roberto Alvarez,Delivered,False,24
+2812902,2,5,AeroCraft Tooling Co,Federico Ramos,Delayed,False,7
+7302809,1,2,SkyWorks Parts,Roberto Alvarez,Delivered,False,11
+2671676,4,11,SteelForge Ltd,Sofia Martins,Delivered,False,16
+3683206,4,8,AeroCraft Tooling Co,Clara Nguyen,Delivered,True,45
+8058239,3,9,SteelForge Ltd,Jordan Parker,Delivered,False,8
+5525751,5,5,MechaSupplies Inc,Priya Sharma,Delivered,False,28
+3627101,4,11,AeroCraft Tooling Co,Miles Ortega,Delivered,False,11
+6355956,1,4,SteelForge Ltd,Taylor Reed,Delayed,False,2
+8857615,2,4,AeroCraft Tooling Co,Miles Ortega,Delivered,True,32
