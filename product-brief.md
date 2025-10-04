@@ -25,7 +25,7 @@ Supplier Command is an AI-powered procurement operations platform that streamlin
 
 ## Target Personas
 
-### Primary Persona: Procurement Buyer (e.g., Carlos)
+### Primary Persona: Procurement Buyer
 **Role:** Day-to-day PO management and supplier coordination
 
 **Responsibilities:**
@@ -45,26 +45,6 @@ Supplier Command is an AI-powered procurement operations platform that streamlin
 - Efficiently communicate with suppliers through preferred channels
 - Spend less time on manual follow-ups
 - Build better supplier relationships through data-driven insights
-
-### Secondary Persona: Procurement Manager
-**Role:** Team oversight and supplier strategy
-
-**Responsibilities:**
-- Monitor team performance and workload
-- Make strategic sourcing decisions
-- Manage supplier relationships at executive level
-- Ensure on-time delivery targets are met
-
-**Pain Points:**
-- Limited visibility into supplier performance trends
-- Reactive rather than proactive supplier management
-- Difficulty identifying which suppliers to prioritize for relationship investment
-
-**Goals:**
-- Data-driven supplier selection and management
-- Proactive risk mitigation
-- Team efficiency optimization
-
 ---
 
 ## Core Features
